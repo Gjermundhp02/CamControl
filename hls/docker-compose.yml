@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx_hls
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./hls:/usr/share/nginx/html/hls:rw
+      - ./logs:/var/log/nginx
+    networks:
+      - streaming_network
+
+  ffmpeg:
+    image: jrottenberg/ffmpeg:latest
+    container_name: ffmpeg_stream
+    volumes:
+      - ./hls:/hls:rw
+      - ./sample.mp4:/videos/input.mp4:ro  # Mount a folder for MP4 files
+    command: >
+      -re -i /videos/input.mp4 \
+      -f hls /hls/stream.m3u8
+    networks:
+      - streaming_network
+
+networks:
+  streaming_network:
+    driver: bridge
