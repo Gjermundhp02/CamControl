@@ -19,9 +19,15 @@ services:
     volumes:
       - ./hls:/hls:rw
       - ./sample.mp4:/videos/input.mp4:ro  # Mount a folder for MP4 files
-    command: >
-      -re -i /videos/input.mp4 \
-      -f hls /hls/stream.m3u8
+    command: 
+      - -re 
+      - -i 
+      - /videos/input.mp4 
+      - -hls_flags 
+      - delete_segments
+      - -f 
+      - hls
+      - /hls/stream.m3u8
     networks:
       - streaming_network
 
