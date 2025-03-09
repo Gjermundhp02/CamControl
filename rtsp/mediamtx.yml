@@ -2,4 +2,4 @@
 
 paths:
   mypath:
-    runOnDemand: /usr/bin/ffmpeg -re -stream_loop -1 -i /sample.mp4 -c:v copy -c:a copy -rtsp_transport tcp -f rtsp rtsp://localhost:8554/mypath
+    runOnInit: /usr/bin/ffmpeg -re -stream_loop -1 -i /sample.mp4 -c copy -an -rtsp_transport tcp -f rtsp rtsp://localhost:8554/mypath

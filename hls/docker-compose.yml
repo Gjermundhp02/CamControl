@@ -21,6 +21,8 @@ services:
       - ./sample.mp4:/videos/input.mp4:ro  # Mount a folder for MP4 files
     command: 
       - -re 
+      - -stream_loop
+      - "-1"
       - -i 
       - /videos/input.mp4 
       - -hls_flags 

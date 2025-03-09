@@ -15,7 +15,9 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [],
+      "package": "com.anonymous.camcontrol"
     },
     "web": {
       "bundler": "metro",
@@ -31,6 +33,16 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "react-native-video",
+        {
+            "androidExtensions": {
+                "useExoplayerRtsp": true,
+                "useExoplayerSmoothStreaming": false,
+                "useExoplayerHls": false
+            }
         }
       ]
     ],
