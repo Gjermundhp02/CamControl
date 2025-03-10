@@ -3,7 +3,7 @@ import Video from 'react-native-video';
 import {lockAsync, unlockAsync, OrientationLock} from 'expo-screen-orientation';
 import { useEffect, useRef, useState } from "react";
 import { setVisibilityAsync } from 'expo-navigation-bar'
-import Joystick, { JoystickStyle } from "@/components/joystick";
+import Joystick, { JoystickStyle } from "@components/joystick";
 
 
 function move(event: GestureResponderEvent) {
