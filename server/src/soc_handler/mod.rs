@@ -1,8 +1,9 @@
-use tokio_tungstenite::{accept_async, tungstenite::protocol::frame::coding::Data};
+use commands::run_command;
+use tokio_tungstenite::accept_async;
 use tokio_tungstenite::tungstenite::protocol::Message;
 use anyhow::Result;
-use futures_util::{SinkExt, StreamExt};
-use std::{collections::HashMap, sync::{Arc, Mutex}};
+use futures_util::StreamExt;
+use std::sync::Arc;
 
 use crate::State;
 
@@ -15,7 +16,9 @@ pub async fn handle_connection(stream: tokio::net::TcpStream, state: Arc<State>)
     while let Some(msg) = ws_stream.next().await {
         match msg? {
             Message::Binary(data) => {
-                println!("Received binary data: {:?}", data.to_vec());
+                let dat = data.to_vec();
+                println!("Received binary data: {:?}", dat);
+                run_command(dat, &state).await?;
             }
             _ => {}
         }
