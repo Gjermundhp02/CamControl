@@ -5,9 +5,16 @@ data[0] = 1
 data[1] = 34
 data[2] = 56
 
-soc.addEventListener('open', () => {
-    soc.send(data)
+function fire() {
     setTimeout(() => {
         soc.send(data)
-    }, 2500);
+        fire()
+    }, 300);
+}
+
+soc.addEventListener('open', () => {
+    soc.addEventListener('message', (e) => {
+        console.log(Array.from(new Uint8Array(e.data)))
+    })
+    fire()
 })

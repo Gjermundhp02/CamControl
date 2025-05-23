@@ -1,5 +1,6 @@
 use tokio::time::{Instant, Duration, sleep_until};
 use anyhow::Result;
+use core::time;
 use std::sync::{atomic::{AtomicBool, Ordering}, Arc};
 use tokio::sync::Mutex;
 
@@ -7,17 +8,15 @@ use crate::io;
 
 #[derive(Debug)]
 pub struct Config {
-    pub steps_per_degree: Arc<u16>,
+    pub steps_per_degree: Arc<i16>,
     pub acceleration: Arc<u8>,
-    pub max_velocity: Arc<i8>,
 }
 
 impl Config {
     fn default() -> Self {
         Self { 
             steps_per_degree: Arc::new(100), 
-            acceleration: Arc::new(3), 
-            max_velocity: Arc::new(127)
+            acceleration: Arc::new(3)
         }
     }
 }
@@ -27,8 +26,8 @@ pub struct State {
     pub position: Arc<Mutex<(i16, i16)>>, // Steps 
     pub velocity: Arc<Mutex<(i8, i8)>>, // Steps per second
     pub target_velocity: Arc<Mutex<(i8, i8)>>, // Steps per second
-    pub fire: Arc<AtomicBool>, // TODO: Timeout fire if no new command comes within 1 second
-    pub fire_timeout: Arc<Mutex<tokio::time::Instant>>,
+    // pub fire: Arc<AtomicBool>, // TODO: Timeout fire if no new command comes within 1 second
+    pub fire_timeout: Arc<Mutex<Option<tokio::time::Instant>>>,
     pub config: Config,
 }
 
@@ -38,40 +37,49 @@ impl State {
             position: Default::default(),
             velocity: Default::default(),
             target_velocity: Default::default(),
-            fire: Default::default(),
-            fire_timeout: Arc::new(Mutex::new(tokio::time::Instant::now())), // Initialize fire_timeout
+            // fire: Default::default(),
+            fire_timeout: Arc::new(Mutex::new(None)), // Initialize fire_timeout
             config: Config::default(),
         }
     }
 
     pub async fn fire(&self) -> Result<()> {
         const FIRE_TIMEOUT: u64 = 500;
-        if self.fire.load(Ordering::Relaxed){
-            // If fire is already set, just update the timeout
-            let mut timeout = self.fire_timeout.lock().await;
-            *timeout = Instant::now()+Duration::from_millis(FIRE_TIMEOUT);
+        if self.fire_timeout.lock().await.is_some() {
+            let mut timeout2 = self.fire_timeout.lock().await;
+            *timeout2 = Some(Instant::now()+Duration::from_millis(FIRE_TIMEOUT));
             Ok(())
         }
         else {
+            println!("Spawning new fire timeout");
             // If fire is not set, set it and start a timeout
             if option_env!("GPIO").is_some() {
                 io::set_fire()?;
             }
-            self.fire.store(true, Ordering::Relaxed);
+            
             let timeout_clone = Arc::clone(&self.fire_timeout);
-            let fire_clone = Arc::clone(&self.fire);
+            
+            // Something is wrong with the lock here as the send message waits a long time around when this triggers
             tokio::spawn(async move {
                 let mut timeout = timeout_clone.lock().await;
-                *timeout = Instant::now()+Duration::from_millis(FIRE_TIMEOUT);
-                let target = *timeout;
+                *timeout = Some(Instant::now()+Duration::from_millis(FIRE_TIMEOUT));
+                println!("Fire timeout set to {:?}", *timeout);
+                
                 // Wait until the timeout is reached
-                sleep_until(target).await;
-                while Instant::now() < target {
-                    sleep_until(target).await;                    
-                }
-                fire_clone.store(false, Ordering::Relaxed);
-                if option_env!("GPIO").is_some() {
-                    io::reset_fire();
+                if let Some(target) = *timeout {
+                    sleep_until(target).await;
+                    
+                    while Instant::now() < target {
+                        println!("Waiting for timeout...");
+                        sleep_until(target).await;                    
+                    }
+                    
+                    println!("Fire timeout reached: {:?}", *timeout);
+                    *timeout = None;
+
+                    if option_env!("GPIO").is_some() {
+                        io::reset_fire();
+                    }
                 }
             });
             Ok(())

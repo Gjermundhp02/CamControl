@@ -18,13 +18,17 @@ async fn main() -> Result<()> {
 
     let state = Arc::new(State::default());
     print!("State: {:?}", state);
+    
     if option_env!("GPIO").is_some() {
         println!("GPIO is enabled");
         io::handle_io(Arc::clone(&state))?;
     }
 
     while let Ok((stream, _)) = listener.accept().await {
-        tokio::spawn(handle_connection(stream, Arc::clone(&state)));
+        // Intentionaly only allows one connection at a time
+        if let Err(e) = handle_connection(stream, Arc::clone(&state)).await {
+            println!("Error handling connection: {:?}", e);
+        }
     }
 
     Ok(())

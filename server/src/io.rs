@@ -35,6 +35,8 @@ fn handle_step(pos: ArcTouple<i16>, vel: ArcTouple<i8>, target_vel: ArcTouple<i8
             let mut vel = vel.lock().await;
             let target_vel = target_vel.lock().await;
 
+            // Todo: Make shure that -acc does not owershoot the target velocity
+            // Todo: Add brake pin 
             // Accelerate
             if vel.0 < target_vel.0 {
                 vel.0 += *acc as i8;
@@ -74,10 +76,10 @@ fn handle_step(pos: ArcTouple<i16>, vel: ArcTouple<i8>, target_vel: ArcTouple<i8
 
             // Set the pin high for one ms and sleep the remaining duration
             // This does not account for the time that the above code takes to run
-            let duratoin = Duration::from_millis(60*1000/255-1);
+            let duration = Duration::from_millis(60*1000/255-1);
             sleep(Duration::from_millis(1)).await;
             step_pin_x.set_low();
-            sleep(duratoin).await;
+            sleep(duration).await;
         }
     });
     Ok(())
